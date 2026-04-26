@@ -1,150 +1,139 @@
-## atualize o Plano de Integração — Vitória News × Social Canvas Hub
+# Plano de Integração — Vitória News × Social Canvas Hub
 
-Vamos transformar o Vitória News no front público + portal de assinantes do ecossistema, usando o **mesmo banco Supabase** que o Social Canvas Hub (Opção A confirmada).
+Versão consolidada (decisões aprovadas pelo cliente). Este documento é a fonte única
+de verdade para a arquitetura do projeto.
 
-Banco compartilhado identificado:
+## Decisões aprovadas
 
-- URL: `https://ghtkdkauseesambzqfrd.supabase.co`
-- Tabelas relevantes que já existem: `articles`, `published_posts`, `scheduled_posts`, `stories_lives`, `social_accounts`, `portal_subscribers`, `contacts`, `profiles` (com `role`).
+| Tópico | Decisão |
+| --- | --- |
+| Repositórios | Projetos Lovable separados. Espelhamento manual no Hub depois. |
+| Banco A (público) | Supabase do Hub `ghtkdkauseesambzqfrd` (compartilhado). |
+| Banco B (privado) | **Lovable Cloud ativado** — projeto Supabase novo na organização do cliente, gerenciado daqui (RLS, edge functions, secrets, migrations). |
+| Acesso ao Hub | Service role do Hub via Edge Function (mais seguro). Anon key não é suficiente porque o Hub não tem policies SELECT públicas hoje. |
+| Realtime | **Ambos**: Hub para artigos/posts públicos; Banco B para conteúdo exclusivo, lives privadas, status de assinatura. |
+| Login | Email/senha + Google + WhatsApp Magic Link (usa Meta WhatsApp API do Hub). |
+| Pagamentos | Stripe built-in do Lovable, com PIX onde suportado. Campos prontos para migração de chaves quando o cliente fornecer. |
+| Grupos WA/TG | Tabela `campaigns` no Banco B + integração futura com Meta WhatsApp API do Hub. |
+| Cookies/LGPD | Banner com 4 categorias, consent_logs no Banco B, gating de scripts (pixels, analytics). |
 
-### Fase 1 — Conexão ao Supabase compartilhado   para o site publico crie um banco de dados novoe faça toda a estrutura do banco de dados no novo banco e tudo que desejarmos publicar no site a dashboard trabalhará integrado ao banco de dados ghtkdkauseesambzqfrd do painel interno para publicar os dados artigos que se tonarão públicos junto com a área privada para assinates que trabalhará integrada ao painel hub de publicação quando fizer a integração mude os arquivos deste projeto para o mesmo projeto da dashboard do Social Canvas Hub numa pasta diferente chmada frontend dentro do projeto do Social Canvas Hub .....
+## Arquitetura
 
-###  Crie a área de assinantes e também a pagina de newsleter gratuita faça os tratramento em todo o site contra xss ataques sql em todos os formulários e campos com entrada de dados criptografe todos os dados enviados para o servidor  faça um protocolo de segurança de informações e prevenção contra ataques de hackers dados sensíveis no site criptografe  não permita que burlem o nosso paywall projete o site para todos  os tipos de telas e plataformas possiveis mobiles e pc  crie uma area administrativa que será responsável pela infraestrutura de pagamentos cadastros da newsletter atendimento vip ao assinante responsável pelas campanhas de marketing para aquisição de assinaturas novas e pessoas interessadas em assinar gratuitamente, respostas de comentários superchats, interação com o publico. esta area administrativa todos os dados serão criptografados e os formulários será protegido contra os ataques  xss e sql e outros tipos de ataques implemente o csp em todo o siete e na area de assinantes e area administrativa que será interligada no painel do social hub....
-
-### Criar `src/integrations/supabase/client.ts` no Vitória News apontando para ghtkdkauseesambzqfrd`.supabase.co` com a mesma `anon key` pública.
-
-1. Copiar/gerar `src/integrations/supabase/types.ts` baseando-se nos types do Hub.
-2. Substituir `mockPosts` por hooks React Query que leem de `articles` (notícias publicadas).
-
-Nota: como o site precisa apenas **ler** dados públicos, não há necessidade de autenticação compartilhada — usamos a anon key. Para a área de assinantes haverá login próprio (mesma `auth.users`, então a sessão é compartilhada).
-
-### Fase 2 — Hooks de dados e substituição dos mocks
-
-Criar:
-
-- `src/hooks/useArticles.ts` → lista paginada de `articles` filtrada por `published = true`.
-- `src/hooks/useArticle.ts` → artigo único por `slug` ou `id` + SEO dinâmico.
-- `src/hooks/useCategoryArticles.ts` → filtro por categoria.
-- `src/hooks/useTrending.ts` → top artigos por views/recência.
-- `src/hooks/useLives.ts` → consome `stories_lives` (lives + podcasts agendados/ativos).
-
-Substituir `mockPosts` em `Index.tsx`, `ArticlePage.tsx`, `CategoryPage.tsx`. Adicionar Skeletons e estados de erro/empty.
-
-### Fase 3 — Realtime (publicação aparece instantaneamente)
-
-Subscription Supabase Realtime nas tabelas `articles` e `stories_lives`:
-
-- Quando o Hub publica/atualiza, o site invalida o cache do React Query e atualiza a UI sem reload.
-
-### Fase 4 — Página unificada de redes sociais (`/redes`)
-
-Nova rota pública agregando o que o Hub publicou em todas as redes:
-
-- Lê `published_posts` (posts já enviados pelo Hub para Instagram, X, Threads, Facebook, YouTube, TikTok, LinkedIn, WhatsApp, Telegram etc.).
-- Filtros por plataforma + busca.
-- Cada card mostra plataforma, thumbnail, legenda e link nativo da rede.
-- Realtime para refletir novos disparos.
-
-### Fase 5 — Área de Assinantes (`/assinantes`)
-
-**Auth**: usa o mesmo `auth.users` do Hub. Login com email/senha + Google (Lovable Cloud).
-
-Na home logada, separadas em abas:
-
-1. **Reportagens Exclusivas** — `articles` com flag `is_exclusive = true`.
-2. **Breaking News** — `articles` com flag `is_breaking = true`, ordenadas por `created_at` desc, com badge animada.
-3. **Matérias Urgentes** — `articles` com `priority = 'urgent'`.
-4. **Lives Exclusivas** — `stories_lives` com `audience = 'subscribers'`.
-5. **Podcasts Exclusivos** — `stories_lives` com `type = 'podcast'` + `audience = 'subscribers'`.
-
-**Gating**: hook `useSubscriberAccess()` checa `portal_subscribers.plan_type = 'paid'` ou role em `profiles`. Se não-assinante → CTA de upgrade.
-
-**Migration nova** (necessária pois esses flags ainda não existem em `articles`):
-
-```sql
-ALTER TABLE articles
-  ADD COLUMN IF NOT EXISTS is_exclusive boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS is_breaking boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS priority text DEFAULT 'normal',  -- normal | urgent
-  ADD COLUMN IF NOT EXISTS audience text DEFAULT 'public';   -- public | subscribers
-
-ALTER TABLE stories_lives
-  ADD COLUMN IF NOT EXISTS audience text DEFAULT 'public',
-  ADD COLUMN IF NOT EXISTS content_type text DEFAULT 'live'; -- live | podcast
+```
+┌──────────────────────────┐        ┌────────────────────────────┐
+│  Banco A — Hub (público) │        │  Banco B — Vitória (Cloud) │
+│  ghtkdkauseesambzqfrd    │        │  novo, gerenciado Lovable  │
+│                          │        │                            │
+│  posts/articles          │        │  profiles, user_roles      │
+│  categories              │        │  subscribers, plans, subs  │
+│  published_posts (redes) │        │  exclusive_articles        │
+│  stories_lives (públicas)│        │  exclusive_media           │
+│  portal_subscribers      │◄──┐    │  lives_private             │
+│  contacts                │   │    │  campaigns, leads          │
+└──────────┬───────────────┘   │    │  consent_logs, audit_logs  │
+           │ realtime          │    └────────┬───────────────────┘
+           │ (anon key, leitura│             │ realtime
+           │  via edge fn      │             │ (cliente autenticado)
+           │  com service role)│             │
+           ▼                   │             ▼
+   ┌───────────────────────────┴─────────────────────────────────┐
+   │  Vitória News (este projeto)                                │
+   │  ┌─────────────────────────┐ ┌──────────────────────────┐   │
+   │  │ Frontend público        │ │ Área de assinantes /admin │   │
+   │  │ Home, /categoria, /post │ │ /assinantes, /admin       │   │
+   │  │ /redes, /grupos         │ │ Paywall server-side (RLS) │   │
+   │  │ /newsletter, /lives     │ │ Stripe checkout/webhook   │   │
+   │  └─────────────────────────┘ └──────────────────────────┘   │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              │ leads (B → Hub portal_subscribers)
+                              └────────────────────────────────────┘
 ```
 
-Acompanha **policies de RLS**: leitura pública apenas onde `audience = 'public' AND is_exclusive = false`; leitura para assinantes via `has_role()` ou `EXISTS portal_subscribers WHERE plan_type='paid'`.
+## Estrutura do Banco B (Lovable Cloud)
 
-### Fase 6 — Captação de leads + grupos WhatsApp/Telegram
+### Tabelas — Sprint 1 (foco da execução atual)
 
-Componente `<LeadCaptureForm />` reutilizável no site, com opção de propósito:
+- `profiles(user_id, display_name, avatar_url, phone, locale, ...)` — vinculada a `auth.users`.
+- `user_roles(user_id, role)` com enum `app_role: admin | editor | subscriber | user` + função `has_role()` SECURITY DEFINER.
+- `subscribers(user_id, plan_id, status, started_at, expires_at, stripe_customer_id, stripe_subscription_id)` — espelho local da assinatura.
+- `subscription_plans(id, code, name, price_cents, currency, interval, perks jsonb, is_active)` — campos placeholder para Stripe.
+- `campaigns(id, slug, name, channel, whatsapp_url, telegram_url, audience, utm jsonb, is_active, starts_at, ends_at)`.
+- `leads(id, email, name, phone, source, campaign_id, consent jsonb, hub_synced_at, ip_hash, ua_hash)`.
+- `lead_events(id, lead_id, type, payload jsonb)` — clicks, conversões, opt-in.
+- `consent_logs(id, user_id, fingerprint, categories jsonb, version, ip_hash, ua_hash)` — LGPD.
+- `audit_logs(id, actor_id, action, entity, entity_id, payload jsonb)`.
+- `exclusive_articles`, `exclusive_media`, `lives_private` — Sprint 2 (paywall).
 
-- **Grupos públicos** (botões "Entrar no WhatsApp" / "Entrar no Telegram") → modal com formulário (nome + email + telefone), grava em `portal_subscribers` com `plan_type='free'` e `metadata.source = 'public_group_whatsapp'`, depois redireciona para o link de convite do grupo.
-- **Grupos VIP / assinatura** → mesmo fluxo, mas leva ao checkout (Fase 8) e só recebe o link após confirmação de pagamento.
+Todas com RLS habilitada. Policies usando `has_role()` para evitar recursão.
 
-Tabela complementar nova:
+### Edge Functions — Sprint 1
 
-```sql
-CREATE TABLE IF NOT EXISTS subscriber_groups (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  platform text NOT NULL,        -- 'whatsapp' | 'telegram'
-  tier text NOT NULL,            -- 'free' | 'paid'
-  name text NOT NULL,
-  invite_url text NOT NULL,
-  is_active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now()
-);
-```
+| Função | Tipo | Auth | Responsabilidade |
+| --- | --- | --- | --- |
+| `hub-list-posts` | público | verify_jwt=false | Lista posts/artigos públicos do Hub via service role; cache 60s. |
+| `hub-get-post` | público | verify_jwt=false | Detalhe de um post do Hub por slug/id. |
+| `hub-list-categories` | público | verify_jwt=false | Categorias do Hub. |
+| `hub-list-published-posts` | público | verify_jwt=false | Feed `published_posts` (redes sociais agregadas) do Hub. |
+| `hub-list-lives` | público | verify_jwt=false | `stories_lives` públicas do Hub. |
+| `newsletter-subscribe` | público | verify_jwt=false | Valida (zod), grava em `leads`, envia para `portal_subscribers` do Hub, dispara double opt-in. |
+| `lead-capture` | público | verify_jwt=false | Variante para grupos: grava lead, registra `lead_events`, retorna invite link da campanha. |
+| `consent-log` | público | verify_jwt=false | Registra escolhas LGPD em `consent_logs`. |
 
-Página `/grupos` lista grupos públicos com CTAs; grupos VIP só aparecem para usuários com assinatura ativa.
+Secrets necessárias (cadastradas via tool antes do deploy):
+`HUB_SUPABASE_URL`, `HUB_SUPABASE_SERVICE_ROLE_KEY`, `HCAPTCHA_SECRET` (opcional na fase 1).
 
-### Fase 7 — Tracking de campanhas (UTM) e Pixel
+### Realtime
 
-- Captura de `utm_source/medium/campaign/content` ao chegar no site, persistida em `localStorage` e enviada com cada `portal_subscribers.insert` (em `metadata`).
-- Já existe estrutura de pixel no Hub (`pixel_tracking_columns.sql`) — vamos reaproveitar para integrar Meta Pixel / Google Ads / TikTok Pixel via env vars (publicáveis), prontos para anunciar.
+- **Banco A (Hub)**: cliente assina `posts` (e/ou `articles` quando o Hub tiver) com a anon key do Hub para invalidar React Query da home/categorias. Como a leitura final passa por edge function, o evento serve só de gatilho.
+- **Banco B**: cliente autenticado assina `exclusive_articles`, `lives_private`, `subscribers` (próprio user) para refletir paywall e novo conteúdo exclusivo em tempo real.
 
-### Fase 8 — Assinaturas pagas (precisa decisão antes de executar)
+## Frontend — Sprint 1
 
-Para "ofertas de assinaturas de grupos exclusivos" precisamos de pagamentos. Antes de codar, durante a execução vou perguntar:
+### Hooks
+`useArticles`, `useArticle`, `useCategoryArticles`, `useTrending`, `useLives`,
+`usePublishedPosts` (redes), `useCampaigns`, `useConsent`, `useAuth` (Banco B),
+`useSubscriberAccess` (Sprint 2).
 
-- Modelo de níveis (Free / Lead / Paid).
-- Provedor de pagamento — recomendação inicial **Stripe (built-in Lovable)** por ser ideal para conteúdo digital/assinaturas; alternativa Paddle.
+### Rotas públicas
+- `/` — destaque + últimas + em alta (hooks reais).
+- `/categoria/:slug` — listagem por categoria.
+- `/post/:slug` — artigo + JSON-LD `NewsArticle` + meta dinâmica.
+- `/redes` — feed agregado de `published_posts` com filtro por plataforma.
+- `/grupos` — campanhas ativas; formulário de captura antes de revelar invite link.
+- `/newsletter` — landing + formulário double opt-in + benefícios.
+- `/lives` — agenda de lives e podcasts públicos.
+- `/podcasts` — listagem de podcasts.
+- `/termos`, `/privacidade`, `/contato` — já existem; ajustar referências.
 
-Independente da escolha, a estrutura prevista é:
+### SEO
+- `<Helmet>` em cada rota com title/description/OG.
+- JSON-LD: `NewsArticle` em `/post/:slug`; `ItemList` na home; `BreadcrumbList` em categorias; `Organization` global.
+- Sitemap gerado por edge function (Sprint 2).
 
-- Tabela `subscription_plans` (nome, preço, intervalo, benefícios).
-- Edge function `create-checkout` + `webhook` para atualizar `portal_subscribers.plan_type`.
-- Página `/assinar` com cards dos planos.
+### LGPD / Cookies
+- `<CookieBanner />` com categorias: necessário (sempre on), analytics, marketing, terceiros.
+- Persistência em localStorage + `consent_logs` via edge function.
+- Hook `useConsent()` controla scripts (Meta Pixel, GA, TikTok Pixel) — só carregam se categoria correspondente estiver aceita.
 
-### Fase 9 — SEO, performance, legais
+### Newsletter / Lead Capture
+- `<LeadCaptureForm />` reutilizável: nome, email, telefone (opcional), checkbox LGPD.
+- Validação client-side com Zod; rate limit + validação server-side na edge function.
+- Após sucesso: registra em `leads` (Banco B) + sincroniza com `portal_subscribers` (Hub).
+- Suporte a `?campaign=slug` para vincular ao registro de campanha e capturar UTM.
 
-- SEO dinâmico em `ArticlePage` (title, description, OG, JSON-LD `NewsArticle`).
-- `/sitemap.xml` gerado por edge function lendo `articles`.
-- Termos / Privacidade / Contato já existentes — apenas ajustar texto para mencionar Social Canvas Hub.
+## Sprint 2+ (próximos passos, fora desta execução)
 
-### Fase 10 — Ativação do Lovable Cloud
+- Auth completo (email/senha + Google + WhatsApp magic link).
+- Paywall server-side com RLS em `exclusive_*` checando `has_role('subscriber')`.
+- Integração Stripe (`enable_stripe_payments`, planos, webhook).
+- Página `/assinantes` com Reportagens Exclusivas, Breaking, Urgentes, Lives, Podcasts.
+- Admin (`/admin`) para CRUD de campanhas, planos, assinantes, logs.
+- Edge functions: `stripe-checkout`, `stripe-webhook`, `sitemap`, `wa-magic-link`.
+- Bridge realtime Hub → Banco B para sync de breaking news.
 
-Necessário para edge functions, secrets de pagamento, sitemap e (se aplicável) login Google. Será o primeiro passo da execução.
+## Itens fora do escopo agora
 
----
-
-### Arquivos / mudanças resumidas
-
-**Novos**: `src/integrations/supabase/client.ts`, `types.ts`, `src/hooks/useArticles.ts`, `useArticle.ts`, `useCategoryArticles.ts`, `useTrending.ts`, `useLives.ts`, `useSubscriberAccess.ts`, `src/pages/RedesPage.tsx`, `src/pages/AssinantesPage.tsx` (com sub-rotas Exclusivas/Breaking/Urgentes/Lives/Podcasts), `src/pages/GruposPage.tsx`, `src/pages/AssinarPage.tsx`, `src/pages/Login.tsx`, `src/components/LeadCaptureForm.tsx`, `src/components/SubscriberGuard.tsx`, `src/components/BreakingNewsBanner.tsx`.
-
-**Modificados**: `src/App.tsx` (rotas + AuthProvider), `Header.tsx` (links Redes / Assinantes / Grupos / Login), `Index.tsx`, `ArticlePage.tsx`, `CategoryPage.tsx`, `Footer.tsx`, `index.html` (pixels), `mockPosts.ts` (removido).
-
-**Migrations**: flags em `articles` e `stories_lives`, tabela `subscriber_groups`, tabela `subscription_plans` (após decisão de pagamentos), policies RLS coerentes.
-
-### Decisões que serão pedidas ao iniciar a execução
-
-1. Modelo de níveis (Free / Free+Lead / Free+Lead+Paid).
-2. Provedor de pagamento (recomendação: Stripe built-in).
-3. Captação de leads em grupos públicos: formulário antes do link, link direto, ou ambos.
-4. Login da área de assinantes: email/senha + Google (padrão) ou outro.
-
-### Fora do escopo agora
-
-- Reescrever o painel admin (continua no Social Canvas Hub).
-- Comentários / fórum de assinantes.
+- Reescrita do painel do Hub.
+- Comentários, fórum, super-chat ao vivo.
 - App mobile nativo.
