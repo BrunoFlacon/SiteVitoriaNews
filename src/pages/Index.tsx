@@ -1,22 +1,59 @@
 import { motion } from "framer-motion";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Loader2 } from "lucide-react";
 import PostCard from "@/components/PostCard";
-import { mockPosts } from "@/data/mockPosts";
+import LeadCaptureForm from "@/components/LeadCaptureForm";
+import SEO from "@/components/SEO";
+import { useArticles } from "@/hooks/useArticles";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const categories = ["Política", "Brasil", "Economia", "Tecnologia", "Mundo"];
 
 const Index = () => {
-  const featured = mockPosts[0];
-  const latest = mockPosts.slice(1);
-  const categories = ["Política", "Brasil", "Economia", "Tecnologia", "Mundo"];
+  const { data: articles = [], isLoading } = useArticles({ limit: 13 });
+
+  const featured = articles[0];
+  const latest = articles.slice(1, 7);
+  const trending = articles.slice(0, 4);
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: articles.slice(0, 10).map((a, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${typeof window !== "undefined" ? window.location.origin : ""}/post/${a.slug ?? a.id}`,
+      name: a.title,
+    })),
+  };
+
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsMediaOrganization",
+    name: "Vitória News",
+    url: typeof window !== "undefined" ? window.location.origin : "https://vitoria.news",
+  };
 
   return (
     <>
-      {/* SEO */}
-      <h1 className="sr-only">Vitória News - Portal de Notícias</h1>
+      <SEO
+        title="Vitória News — Notícias, Política e Brasil em tempo real"
+        description="Cobertura editorial premium de política, Brasil, mundo, economia e tecnologia. Últimas notícias e análises."
+        jsonLd={[itemListJsonLd, orgJsonLd]}
+      />
+      <h1 className="sr-only">Vitória News — Portal de Notícias</h1>
 
       {/* Hero */}
       <section className="pt-20 pb-8 px-4">
         <div className="container mx-auto">
-          <PostCard post={featured} featured />
+          {isLoading ? (
+            <Skeleton className="aspect-[21/9] w-full rounded-xl" />
+          ) : featured ? (
+            <PostCard post={{ ...featured }} featured />
+          ) : (
+            <div className="glass rounded-xl p-12 text-center text-muted-foreground">
+              Nenhuma notícia publicada ainda. Conteúdo do Hub aparecerá aqui em tempo real.
+            </div>
+          )}
         </div>
       </section>
 
@@ -26,19 +63,33 @@ const Index = () => {
           <div className="flex items-center gap-3 mb-8">
             <div className="w-1 h-6 rounded-full bg-primary" />
             <h2 className="font-display text-2xl font-bold">Últimas Notícias</h2>
+            {isLoading && <Loader2 className="animate-spin text-muted-foreground" size={16} />}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {latest.map((post, i) => (
-              <motion.div
-                key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <PostCard post={post} />
-              </motion.div>
-            ))}
+            {isLoading
+              ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="aspect-[16/10] rounded-xl" />)
+              : latest.map((post, i) => (
+                  <motion.div
+                    key={post.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <PostCard post={post} />
+                  </motion.div>
+                ))}
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <LeadCaptureForm
+            source="newsletter"
+            title="Newsletter Vitória News"
+            description="Receba as principais notícias do dia, breaking news e análises exclusivas direto no seu email."
+          />
         </div>
       </section>
 
@@ -50,7 +101,7 @@ const Index = () => {
             <h2 className="font-display text-2xl font-bold">Em Alta</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mockPosts.slice(0, 4).map((post, i) => (
+            {trending.map((post, i) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, x: -20 }}

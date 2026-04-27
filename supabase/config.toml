@@ -1,1 +1,19 @@
 project_id = "kpkeelxdyryufmevhhhb"
+
+[functions.hub-list-posts]
+verify_jwt = false
+
+[functions.hub-get-post]
+verify_jwt = false
+
+[functions.hub-list-published-posts]
+verify_jwt = false
+
+[functions.hub-list-lives]
+verify_jwt = false
+
+[functions.lead-capture]
+verify_jwt = false
+
+[functions.consent-log]
+verify_jwt = false
