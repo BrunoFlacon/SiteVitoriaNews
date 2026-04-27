@@ -8,10 +8,11 @@ const navItems = [
   { label: "Home", path: "/" },
   { label: "Política", path: "/categoria/politica" },
   { label: "Brasil", path: "/categoria/brasil" },
-  { label: "Mundo", path: "/categoria/mundo" },
   { label: "Economia", path: "/categoria/economia" },
-  { label: "Tecnologia", path: "/categoria/tecnologia" },
-  { label: "Contato", path: "/contato" },
+  { label: "Redes", path: "/redes" },
+  { label: "Lives", path: "/lives" },
+  { label: "Grupos", path: "/grupos" },
+  { label: "Newsletter", path: "/newsletter" },
 ];
 
 const Header = () => {
