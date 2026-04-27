@@ -19,6 +19,8 @@ const PostCard = ({ post, featured = false }: { post: Post; featured?: boolean }
     year: "numeric",
   });
 
+  const href = `/post/${post.slug ?? post.id}`;
+
   if (featured) {
     return (
       <motion.article
@@ -26,7 +28,7 @@ const PostCard = ({ post, featured = false }: { post: Post; featured?: boolean }
         animate={{ opacity: 1, y: 0 }}
         className="group relative rounded-xl overflow-hidden glass glow-primary"
       >
-        <Link to={`/post/${post.id}`} className="block">
+        <Link to={href} className="block">
           <div className="relative aspect-[16/9] md:aspect-[21/9]">
             <img
               src={post.image_url || "/placeholder.svg"}
@@ -62,7 +64,7 @@ const PostCard = ({ post, featured = false }: { post: Post; featured?: boolean }
       animate={{ opacity: 1, y: 0 }}
       className="group glass rounded-xl overflow-hidden hover:glow-primary transition-shadow duration-300"
     >
-      <Link to={`/post/${post.id}`} className="block">
+      <Link to={href} className="block">
         <div className="aspect-[16/10] overflow-hidden">
           <img
             src={post.image_url || "/placeholder.svg"}
