@@ -16,8 +16,12 @@ Deno.serve(async (req) => {
     const { data, error } = await q;
 
     if (error) {
+      const e = error as { code?: string; message?: string };
+      if (e.code === "PGRST205" || e.code === "42P01") {
+        return jsonResponse({ items: [], hub_empty: true });
+      }
       console.error("[hub-list-published-posts] error", error);
-      return errorResponse("Falha ao buscar publicações", 502, { detail: error.message });
+      return errorResponse("Falha ao buscar publicações", 502, { detail: e.message });
     }
 
     return jsonResponse({ items: data ?? [] });
