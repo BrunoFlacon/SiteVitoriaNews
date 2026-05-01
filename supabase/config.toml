@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.consent-log]
 verify_jwt = false
+
+[functions.sitemap-xml]
+verify_jwt = false
+
+[functions.rss-xml]
+verify_jwt = false
+
+[functions.atom-xml]
+verify_jwt = false
