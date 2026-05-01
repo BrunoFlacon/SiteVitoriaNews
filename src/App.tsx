@@ -18,6 +18,8 @@ import LivesPodcastsPage from "./pages/LivesPodcastsPage";
 import TermosPage from "./pages/TermosPage";
 import PrivacidadePage from "./pages/PrivacidadePage";
 import ContatoPage from "./pages/ContatoPage";
+import AuthPage from "./pages/AuthPage";
+import SubscribersPage from "./pages/SubscribersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
                   <Route path="/termos" element={<TermosPage />} />
                   <Route path="/privacidade" element={<PrivacidadePage />} />
                   <Route path="/contato" element={<ContatoPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/assinantes" element={<SubscribersPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
