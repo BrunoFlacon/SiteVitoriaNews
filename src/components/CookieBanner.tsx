@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, Settings2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useConsent, ConsentCategories } from "@/hooks/useConsent";
 
-const CookieBanner = () => {
+const CookieBanner = forwardRef<HTMLDivElement>((_props, _ref) => {
   const { consent, setConsent } = useConsent();
   const [open, setOpen] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -116,6 +116,8 @@ const CookieBanner = () => {
       )}
     </AnimatePresence>
   );
-};
+});
+
+CookieBanner.displayName = "CookieBanner";
 
 export default CookieBanner;
