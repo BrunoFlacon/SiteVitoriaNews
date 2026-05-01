@@ -18,6 +18,8 @@ import LivesPodcastsPage from "./pages/LivesPodcastsPage";
 import TermosPage from "./pages/TermosPage";
 import PrivacidadePage from "./pages/PrivacidadePage";
 import ContatoPage from "./pages/ContatoPage";
+import AuthPage from "./pages/AuthPage";
+import SubscribersPage from "./pages/SubscribersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
