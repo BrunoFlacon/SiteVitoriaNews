@@ -24,7 +24,8 @@ Deno.serve(async (req) => {
     );
 
     if (error || !data) {
-      return errorResponse("Post não encontrado", 404, { detail: String(error) });
+      const e = error as { code?: string; message?: string } | null;
+      return errorResponse("Post não encontrado", 404, { detail: e?.message ?? "não encontrado" });
     }
 
     return jsonResponse({ table, item: data });
