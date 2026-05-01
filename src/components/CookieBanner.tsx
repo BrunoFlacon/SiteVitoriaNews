@@ -116,6 +116,8 @@ const CookieBanner = forwardRef<HTMLDivElement>((_props, _ref) => {
       )}
     </AnimatePresence>
   );
-};
+});
+
+CookieBanner.displayName = "CookieBanner";
 
 export default CookieBanner;
