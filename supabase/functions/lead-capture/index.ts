@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const raw = await req.json().catch(() => null);
     const parsed = Body.safeParse(raw);
     if (!parsed.success) {
-      return errorResponse("Dados inválidos", 400, { details: parsed.error.flatten().fieldErrors });
+      return errorResponse("Dados inválidos", 400);
     }
     const { email, name, phone, source, campaign_slug, utm, consent } = parsed.data;
     if (!consent.accept_terms) return errorResponse("Aceite dos termos é obrigatório", 400);
