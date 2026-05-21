@@ -8,14 +8,18 @@ export interface Campaign {
   name: string;
   description: string | null;
   channel: "whatsapp" | "telegram" | "newsletter" | "mixed";
-  whatsapp_url: string | null;
-  telegram_url: string | null;
   audience: string;
   utm: Record<string, string>;
   is_active: boolean;
   starts_at: string | null;
   ends_at: string | null;
 }
+
+// Safe public columns ONLY — invite URLs (whatsapp_url, telegram_url) are NOT
+// exposed to the client. They are delivered exclusively by the `lead-capture`
+// edge function after the visitor completes the opt-in form.
+const PUBLIC_COLUMNS =
+  "id, slug, name, description, channel, audience, utm, is_active, starts_at, ends_at";
 
 export function useCampaigns() {
   const qc = useQueryClient();
