@@ -16,11 +16,8 @@ Deno.serve(async (req) => {
     const { data, error } = await q;
 
     if (error) {
-      if (isHubUnavailable(error)) {
-        return jsonResponse({ items: [], hub_empty: true });
-      }
-      console.error("[hub-list-lives] error", error);
-      return errorResponse("Falha ao buscar lives", 502);
+      console.warn("[hub-list-lives] sem dados; retornando vazio", error);
+      return jsonResponse({ items: [], hub_empty: true, degraded: true });
     }
 
     return jsonResponse({ items: data ?? [] });

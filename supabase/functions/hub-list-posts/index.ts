@@ -28,12 +28,8 @@ Deno.serve(async (req) => {
     );
 
     if (error || !data) {
-      if (isHubUnavailable(error)) {
-        console.warn("[hub-list-posts] Hub indisponível; retornando lista vazia");
-        return jsonResponse({ table: null, count: 0, items: [], hub_empty: true });
-      }
-      console.error("[hub-list-posts] error", error);
-      return errorResponse("Falha ao buscar posts", 502);
+      console.warn("[hub-list-posts] sem dados; retornando lista vazia", error);
+      return jsonResponse({ table: null, count: 0, items: [], hub_empty: true, degraded: !!error });
     }
 
     return jsonResponse({ table, count: data.length, items: data });
