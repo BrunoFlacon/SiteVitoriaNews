@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { corsHeaders, errorResponse, jsonResponse } from "../_shared/cors.ts";
-import { getHubClient, HUB_PUBLISHED_TABLE } from "../_shared/hub.ts";
+import { getHubClient, HUB_PUBLISHED_TABLE, isHubUnavailable } from "../_shared/hub.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "30", 10), 100);
-    const platform = url.searchParams.get("platform"); // instagram | x | facebook | youtube | tiktok | linkedin | whatsapp | telegram
+    const platform = url.searchParams.get("platform");
 
     const hub = getHubClient();
     let q = hub.from(HUB_PUBLISHED_TABLE).select("*").order("published_at", { ascending: false }).limit(limit);
@@ -16,8 +16,7 @@ Deno.serve(async (req) => {
     const { data, error } = await q;
 
     if (error) {
-      const e = error as { code?: string; message?: string };
-      if (e.code === "PGRST205" || e.code === "42P01") {
+      if (isHubUnavailable(error)) {
         return jsonResponse({ items: [], hub_empty: true });
       }
       console.error("[hub-list-published-posts] error", error);
@@ -26,6 +25,9 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ items: data ?? [] });
   } catch (e) {
+    if (isHubUnavailable(e)) {
+      return jsonResponse({ items: [], hub_empty: true });
+    }
     console.error("[hub-list-published-posts] exception", e);
     return errorResponse("Erro interno", 500);
   }

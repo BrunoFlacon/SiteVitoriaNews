@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { corsHeaders, errorResponse, jsonResponse } from "../_shared/cors.ts";
-import { getHubClient, HUB_POSTS_TABLES, tryFromTables } from "../_shared/hub.ts";
+import { getHubClient, HUB_POSTS_TABLES, tryFromTables, isHubUnavailable } from "../_shared/hub.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -24,13 +24,19 @@ Deno.serve(async (req) => {
     );
 
     if (error || !data) {
+      if (isHubUnavailable(error)) {
+        return jsonResponse({ table: null, item: null, hub_empty: true });
+      }
       if (error) console.error("[hub-get-post] error", error);
       return errorResponse("Post não encontrado", 404);
     }
 
     return jsonResponse({ table, item: data });
   } catch (e) {
+    if (isHubUnavailable(e)) {
+      return jsonResponse({ table: null, item: null, hub_empty: true });
+    }
     console.error("[hub-get-post] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });
