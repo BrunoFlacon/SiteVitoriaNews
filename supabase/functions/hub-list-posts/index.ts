@@ -28,10 +28,8 @@ Deno.serve(async (req) => {
     );
 
     if (error || !data) {
-      const errObj = error as { code?: string; message?: string } | null;
-      // Hub ainda não provisionou as tabelas — degradar graciosamente
-      if (errObj?.code === "PGRST205" || errObj?.code === "42P01") {
-        console.warn("[hub-list-posts] Hub sem tabelas de posts ainda; retornando lista vazia");
+      if (isHubUnavailable(error)) {
+        console.warn("[hub-list-posts] Hub indisponível; retornando lista vazia");
         return jsonResponse({ table: null, count: 0, items: [], hub_empty: true });
       }
       console.error("[hub-list-posts] error", error);
@@ -40,6 +38,10 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ table, count: data.length, items: data });
   } catch (e) {
+    if (isHubUnavailable(e)) {
+      console.warn("[hub-list-posts] Hub indisponível (exception); retornando lista vazia");
+      return jsonResponse({ table: null, count: 0, items: [], hub_empty: true });
+    }
     console.error("[hub-list-posts] exception", e);
     return errorResponse("Erro interno", 500);
   }
