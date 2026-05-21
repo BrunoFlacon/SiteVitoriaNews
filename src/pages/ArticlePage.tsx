@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Clock, Share2, Facebook, Twitter, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import DOMPurify from "dompurify";
 import PostCard from "@/components/PostCard";
 import SEO from "@/components/SEO";
 import { useArticle, useArticles } from "@/hooks/useArticles";
