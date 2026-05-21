@@ -145,6 +145,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[lead-capture] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });
