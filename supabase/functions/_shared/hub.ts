@@ -26,6 +26,27 @@ export const HUB_LIVES_TABLE = "stories_lives";
 export const HUB_CATEGORIES_TABLE = "categories";
 
 /**
+ * Detecta erros que significam "Hub indisponível" — tabela ainda não criada,
+ * DNS/rede falhando (projeto pausado/removido), timeout, etc.
+ * Nesses casos o site deve degradar graciosamente em vez de retornar 502.
+ */
+export function isHubUnavailable(err: unknown): boolean {
+  if (!err) return false;
+  const e = err as { code?: string; message?: string; name?: string };
+  if (e.code === "PGRST205" || e.code === "42P01") return true;
+  const msg = `${e.message ?? ""} ${e.name ?? ""} ${String(err)}`.toLowerCase();
+  return (
+    msg.includes("failed to lookup") ||
+    msg.includes("dns error") ||
+    msg.includes("error sending request") ||
+    msg.includes("networkerror") ||
+    msg.includes("failed to fetch") ||
+    msg.includes("connection refused") ||
+    msg.includes("timeout")
+  );
+}
+
+/**
  * Tenta buscar de uma lista de tabelas e retorna o primeiro resultado bem-sucedido.
  * Útil porque o Hub pode usar `articles` ou `posts` dependendo da versão.
  */
