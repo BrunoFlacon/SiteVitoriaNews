@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     if (leadErr || !lead) {
       console.error("[lead-capture] insert lead", leadErr);
-      return errorResponse("Não foi possível registrar o lead", 500, { detail: leadErr?.message });
+      return errorResponse("Não foi possível registrar o lead", 500);
     }
 
     // Evento de opt-in
