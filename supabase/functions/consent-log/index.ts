@@ -70,12 +70,12 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error("[consent-log] insert", error);
-      return errorResponse("Falha ao registrar consentimento", 500, { detail: error.message });
+      return errorResponse("Falha ao registrar consentimento", 500);
     }
 
     return jsonResponse({ ok: true });
   } catch (e) {
     console.error("[consent-log] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });
