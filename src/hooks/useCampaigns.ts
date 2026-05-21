@@ -29,7 +29,7 @@ export function useCampaigns() {
     queryFn: async (): Promise<Campaign[]> => {
       const { data, error } = await supabase
         .from("campaigns")
-        .select("*")
+        .select(PUBLIC_COLUMNS)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -61,7 +61,7 @@ export function useCampaign(slug: string | undefined) {
       if (!slug) return null;
       const { data, error } = await supabase
         .from("campaigns")
-        .select("*")
+        .select(PUBLIC_COLUMNS)
         .eq("slug", slug)
         .eq("is_active", true)
         .maybeSingle();
