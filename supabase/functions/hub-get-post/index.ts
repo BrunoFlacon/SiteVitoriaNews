@@ -24,8 +24,8 @@ Deno.serve(async (req) => {
     );
 
     if (error || !data) {
-      const e = error as { code?: string; message?: string } | null;
-      return errorResponse("Post não encontrado", 404, { detail: e?.message ?? "não encontrado" });
+      if (error) console.error("[hub-get-post] error", error);
+      return errorResponse("Post não encontrado", 404);
     }
 
     return jsonResponse({ table, item: data });
