@@ -117,7 +117,15 @@ const ArticlePage = () => {
           <div
             className="prose prose-invert max-w-none text-foreground/90 leading-relaxed text-lg mb-8"
             dangerouslySetInnerHTML={{
-              __html: post.content || `<p>${post.excerpt}</p>`,
+              __html: DOMPurify.sanitize(post.content || `<p>${post.excerpt}</p>`, {
+                ALLOWED_TAGS: [
+                  "p", "br", "strong", "em", "u", "s", "blockquote", "code", "pre",
+                  "ul", "ol", "li", "a", "img", "figure", "figcaption",
+                  "h1", "h2", "h3", "h4", "h5", "h6", "hr", "span", "div",
+                ],
+                ALLOWED_ATTR: ["href", "target", "rel", "src", "alt", "title", "class"],
+                ALLOW_DATA_ATTR: false,
+              }),
             }}
           />
 
