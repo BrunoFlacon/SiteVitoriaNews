@@ -4,11 +4,11 @@ import { motion } from "framer-motion";
 import { Crown, Lock, Check, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useArticles } from "@/hooks/useArticles";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeArticle, NormalizedArticle } from "@/lib/hub";
 import PostCard from "@/components/PostCard";
 import SEO from "@/components/SEO";
 import { toast } from "sonner";
@@ -32,7 +32,21 @@ const SubscribersPage = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { data: sub, isLoading: subLoading } = useSubscription();
-  const { data: articles = [] } = useArticles({ limit: 12 });
+
+  // Server-gated: edge function verifies JWT + active subscription before returning content.
+  // If the user isn't a verified subscriber the function returns 401/403 and we render nothing exclusive.
+  const { data: articles = [] } = useQuery({
+    queryKey: ["exclusive-articles", sub?.isActive],
+    enabled: Boolean(user && sub?.isActive),
+    queryFn: async (): Promise<NormalizedArticle[]> => {
+      const { data, error } = await supabase.functions.invoke<{
+        table: string | null;
+        items: Record<string, unknown>[];
+      }>("hub-list-exclusive-posts", { body: { limit: 12 } });
+      if (error) throw error;
+      return (data?.items ?? []).map((row) => normalizeArticle(row, data?.table ?? null));
+    },
+  });
 
   const { data: plans = [] } = useQuery({
     queryKey: ["plans"],

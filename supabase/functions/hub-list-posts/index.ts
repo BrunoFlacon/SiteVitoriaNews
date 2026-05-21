@@ -35,12 +35,12 @@ Deno.serve(async (req) => {
         return jsonResponse({ table: null, count: 0, items: [], hub_empty: true });
       }
       console.error("[hub-list-posts] error", error);
-      return errorResponse("Falha ao buscar posts no Hub", 502, { detail: errObj?.message ?? "erro desconhecido" });
+      return errorResponse("Falha ao buscar posts", 502);
     }
 
     return jsonResponse({ table, count: data.length, items: data });
   } catch (e) {
     console.error("[hub-list-posts] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });

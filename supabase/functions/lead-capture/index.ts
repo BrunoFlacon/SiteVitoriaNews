@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const raw = await req.json().catch(() => null);
     const parsed = Body.safeParse(raw);
     if (!parsed.success) {
-      return errorResponse("Dados inválidos", 400, { details: parsed.error.flatten().fieldErrors });
+      return errorResponse("Dados inválidos", 400);
     }
     const { email, name, phone, source, campaign_slug, utm, consent } = parsed.data;
     if (!consent.accept_terms) return errorResponse("Aceite dos termos é obrigatório", 400);
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
 
     if (leadErr || !lead) {
       console.error("[lead-capture] insert lead", leadErr);
-      return errorResponse("Não foi possível registrar o lead", 500, { detail: leadErr?.message });
+      return errorResponse("Não foi possível registrar o lead", 500);
     }
 
     // Evento de opt-in
@@ -145,6 +145,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[lead-capture] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });

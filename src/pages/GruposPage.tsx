@@ -45,12 +45,12 @@ const GruposPage = () => {
               >
                 <div className="glass rounded-xl p-6">
                   <div className="flex items-center gap-2 mb-2">
-                    {c.whatsapp_url && (
+                    {(c.channel === "whatsapp" || c.channel === "mixed") && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">
                         <MessageCircle size={12} /> WhatsApp
                       </span>
                     )}
-                    {c.telegram_url && (
+                    {(c.channel === "telegram" || c.channel === "mixed") && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase">
                         <Hash size={12} /> Telegram
                       </span>
@@ -67,7 +67,7 @@ const GruposPage = () => {
                   )}
                 </div>
                 <LeadCaptureForm
-                  source={c.whatsapp_url ? "group_whatsapp" : "group_telegram"}
+                  source={c.channel === "telegram" ? "group_telegram" : "group_whatsapp"}
                   campaignSlug={c.slug}
                   title={`Entrar em: ${c.name}`}
                   description="Preencha rapidamente para receber o link do grupo."
