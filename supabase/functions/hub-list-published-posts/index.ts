@@ -21,12 +21,12 @@ Deno.serve(async (req) => {
         return jsonResponse({ items: [], hub_empty: true });
       }
       console.error("[hub-list-published-posts] error", error);
-      return errorResponse("Falha ao buscar publicações", 502, { detail: e.message });
+      return errorResponse("Falha ao buscar publicações", 502);
     }
 
     return jsonResponse({ items: data ?? [] });
   } catch (e) {
     console.error("[hub-list-published-posts] exception", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
+    return errorResponse("Erro interno", 500);
   }
 });
