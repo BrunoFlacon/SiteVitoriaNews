@@ -1,6 +1,6 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { corsHeaders, errorResponse, jsonResponse } from "../_shared/cors.ts";
-import { getHubClient, HUB_POSTS_TABLES, tryFromTables } from "../_shared/hub.ts";
+import { getHubClient, HUB_POSTS_TABLES, tryFromTables, isHubUnavailable } from "../_shared/hub.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
