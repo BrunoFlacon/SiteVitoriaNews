@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const raw = await req.json().catch(() => null);
     const parsed = Body.safeParse(raw);
     if (!parsed.success) {
-      return errorResponse("Consentimento inválido", 400, { details: parsed.error.flatten().fieldErrors });
+      return errorResponse("Consentimento inválido", 400);
     }
 
     const supabase = createClient(
