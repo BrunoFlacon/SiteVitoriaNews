@@ -315,6 +315,13 @@ export type Database = {
             referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subscribers_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       subscription_plans: {
@@ -391,7 +398,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      subscription_plans_public: {
+        Row: {
+          code: string | null
+          currency: string | null
+          description: string | null
+          id: string | null
+          interval: Database["public"]["Enums"]["plan_interval"] | null
+          is_active: boolean | null
+          name: string | null
+          perks: Json | null
+          price_cents: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          code?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          interval?: Database["public"]["Enums"]["plan_interval"] | null
+          is_active?: boolean | null
+          name?: string | null
+          perks?: Json | null
+          price_cents?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          code?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          interval?: Database["public"]["Enums"]["plan_interval"] | null
+          is_active?: boolean | null
+          name?: string | null
+          perks?: Json | null
+          price_cents?: number | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
