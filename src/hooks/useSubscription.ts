@@ -19,7 +19,7 @@ export function useSubscription() {
       if (!user) return { isActive: false };
       const { data, error } = await supabase
         .from("subscribers")
-        .select("status, current_period_end, plan_id, subscription_plans(code, name)")
+        .select("status, current_period_end, plan_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -28,7 +28,17 @@ export function useSubscription() {
       if (error || !data) return { isActive: false };
 
       const isActive = ["active", "trialing"].includes(data.status as string);
-      const plan = (data as { subscription_plans?: { code: string; name: string } | null }).subscription_plans ?? null;
+
+      let plan: { code: string; name: string } | null = null;
+      if (data.plan_id) {
+        const { data: planRow } = await (supabase as any)
+          .from("subscription_plans_public")
+          .select("code, name")
+          .eq("id", data.plan_id)
+          .maybeSingle();
+        if (planRow) plan = { code: planRow.code, name: planRow.name };
+      }
+
       return {
         isActive,
         plan,

@@ -51,10 +51,9 @@ const SubscribersPage = () => {
   const { data: plans = [] } = useQuery({
     queryKey: ["plans"],
     queryFn: async (): Promise<Plan[]> => {
-      const { data, error } = await supabase
-        .from("subscription_plans")
+      const { data, error } = await (supabase as any)
+        .from("subscription_plans_public")
         .select("*")
-        .eq("is_active", true)
         .order("sort_order", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Plan[];
