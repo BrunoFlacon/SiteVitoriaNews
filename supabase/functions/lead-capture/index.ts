@@ -82,25 +82,28 @@ Deno.serve(async (req) => {
     const ipHash = await sha256(ip);
     const uaHash = await sha256(req.headers.get("user-agent") ?? "unknown");
 
-    // Upsert lead
-    const { data: lead, error: leadErr } = await supabase
+    // Upsert lead (índices únicos parciais exigem upsert manual)
+    const emailLower = email.toLowerCase();
+    let q = supabase
       .from("leads")
-      .upsert(
-        {
-          email: email.toLowerCase(),
-          name,
-          phone,
-          source,
-          campaign_id: campaignId,
-          consent: { ...consent, recorded_at: new Date().toISOString() },
-          utm: utm ?? {},
-          ip_hash: ipHash,
-          ua_hash: uaHash,
-        },
-        { onConflict: campaignId ? "email,campaign_id" : "email" },
-      )
-      .select()
-      .single();
+      .select("id")
+      .eq("email", emailLower);
+    q = campaignId ? q.eq("campaign_id", campaignId) : q.is("campaign_id", null);
+
+    const { data: existingLead } = await q.maybeSingle();
+    const leadPayload = {
+      name,
+      phone,
+      source,
+      consent: { ...consent, recorded_at: new Date().toISOString() },
+      utm: utm ?? {},
+      ip_hash: ipHash,
+      ua_hash: uaHash,
+    };
+
+    const { data: lead, error: leadErr } = existingLead
+      ? await supabase.from("leads").update(leadPayload).eq("id", existingLead.id).select().single()
+      : await supabase.from("leads").insert({ ...leadPayload, email: emailLower, campaign_id: campaignId }).select().single();
 
     if (leadErr || !lead) {
       console.error("[lead-capture] insert lead", leadErr);
@@ -117,7 +120,7 @@ Deno.serve(async (req) => {
     // Sincroniza com o Hub (best-effort — não bloqueia resposta se falhar)
     try {
       const hub = getHubClient();
-      await hub.from("portal_subscribers").upsert(
+      const { error: hubErr } = await hub.from("portal_subscribers").upsert(
         {
           email: email.toLowerCase(),
           name,
@@ -127,6 +130,7 @@ Deno.serve(async (req) => {
         },
         { onConflict: "email" },
       );
+      if (hubErr) throw hubErr;
       await supabase.from("leads").update({ hub_synced_at: new Date().toISOString() }).eq("id", lead.id);
       await supabase.from("lead_events").insert({ lead_id: lead.id, type: "sync_hub", payload: {} });
     } catch (e) {
