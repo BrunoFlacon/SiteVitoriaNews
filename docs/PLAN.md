@@ -7,13 +7,13 @@ de verdade para a arquitetura do projeto.
 
 | Tópico | Decisão |
 | --- | --- |
-| Repositórios | Projetos Lovable separados. Espelhamento manual no Hub depois. |
+| Repositórios | Projetos separados. Espelhamento manual no Hub depois. |
 | Banco A (público) | Supabase do Hub `ghtkdkauseesambzqfrd` (compartilhado). |
-| Banco B (privado) | **Lovable Cloud ativado** — projeto Supabase novo na organização do cliente, gerenciado daqui (RLS, edge functions, secrets, migrations). |
+| Banco B (privado) | **Supabase Cloud ativado** — projeto Supabase novo na organização do cliente, gerenciado daqui (RLS, edge functions, secrets, migrations). |
 | Acesso ao Hub | Service role do Hub via Edge Function (mais seguro). Anon key não é suficiente porque o Hub não tem policies SELECT públicas hoje. |
 | Realtime | **Ambos**: Hub para artigos/posts públicos; Banco B para conteúdo exclusivo, lives privadas, status de assinatura. |
 | Login | Email/senha + Google + WhatsApp Magic Link (usa Meta WhatsApp API do Hub). |
-| Pagamentos | Stripe built-in do Lovable, com PIX onde suportado. Campos prontos para migração de chaves quando o cliente fornecer. |
+| Pagamentos | Stripe, com PIX onde suportado. Campos prontos para migração de chaves quando o cliente fornecer. |
 | Grupos WA/TG | Tabela `campaigns` no Banco B + integração futura com Meta WhatsApp API do Hub. |
 | Cookies/LGPD | Banner com 4 categorias, consent_logs no Banco B, gating de scripts (pixels, analytics). |
 
@@ -22,7 +22,7 @@ de verdade para a arquitetura do projeto.
 ```
 ┌──────────────────────────┐        ┌────────────────────────────┐
 │  Banco A — Hub (público) │        │  Banco B — Vitória (Cloud) │
-│  ghtkdkauseesambzqfrd    │        │  novo, gerenciado Lovable  │
+│  ghtkdkauseesambzqfrd    │        │  novo, gerenciado Supabase │
 │                          │        │                            │
 │  posts/articles          │        │  profiles, user_roles      │
 │  categories              │        │  subscribers, plans, subs  │
@@ -50,7 +50,7 @@ de verdade para a arquitetura do projeto.
                               └────────────────────────────────────┘
 ```
 
-## Estrutura do Banco B (Lovable Cloud)
+## Estrutura do Banco B (Supabase)
 
 ### Tabelas — Sprint 1 (foco da execução atual)
 
@@ -80,7 +80,7 @@ Todas com RLS habilitada. Policies usando `has_role()` para evitar recursão.
 | `lead-capture` | público | verify_jwt=false | Variante para grupos: grava lead, registra `lead_events`, retorna invite link da campanha. |
 | `consent-log` | público | verify_jwt=false | Registra escolhas LGPD em `consent_logs`. |
 
-Secrets necessárias (cadastradas via tool antes do deploy):
+Secrets necessárias (cadastradas no painel do Supabase antes do deploy):
 `HUB_SUPABASE_URL`, `HUB_SUPABASE_SERVICE_ROLE_KEY`, `HCAPTCHA_SECRET` (opcional na fase 1).
 
 ### Realtime

@@ -66,7 +66,7 @@ export function normalizeArticle(row: Record<string, unknown>, table: string | n
 }
 
 /**
- * Helper para chamar edge functions do Banco B (Lovable Cloud) via SDK.
+ * Helper para chamar edge functions do Supabase (Banco B) via SDK.
  * Aceita query params e body JSON, devolve o JSON parseado ou lança erro.
  */
 export async function callEdgeFunction<T = unknown>(

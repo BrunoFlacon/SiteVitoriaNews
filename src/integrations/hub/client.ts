@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
  * Usado APENAS para realtime (assinatura de mudanças em posts).
  * Leituras vão pelas edge functions (que usam service role).
  *
- * Configurar em Lovable Cloud secrets:
+ * Configurar como secrets do projeto Supabase:
  *   - HUB_SUPABASE_URL  → também exposto como build var via VITE_HUB_SUPABASE_URL (placeholder)
  *   - HUB_SUPABASE_ANON_KEY  → também como VITE_HUB_SUPABASE_ANON_KEY
  *
