@@ -86,14 +86,3 @@ AS RESTRICTIVE
 FOR DELETE
 TO authenticated, anon
 USING (false);
-
--- Restringir realtime apenas ao topico público de campaigns (único realtime ativo)
-DROP POLICY IF EXISTS "realtime_public_topics_only" ON realtime.messages;
-
-CREATE POLICY "realtime_public_topics_only"
-ON realtime.messages
-FOR SELECT
-TO authenticated, anon
-USING (
-  realtime.topic() = 'public:campaigns'
-);

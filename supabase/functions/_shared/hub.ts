@@ -1,10 +1,35 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const HUB_TIMEOUT_MS = 3000;
+
+/**
+ * fetch com timeout — evita que uma chamada ao Hub fique presa ~25s
+ * (o timeout padrão do supabase-js) quando o Hub está lento ou fora do ar.
+ * Isso previne aquecimento de CPU/memória nas edge functions e erros
+ * em cascata no dashboard.
+ */
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), HUB_TIMEOUT_MS);
+  const { signal, ...rest } = init ?? {};
+  return fetch(input, { ...rest, signal: ctrl.signal })
+    .then((res) => {
+      clearTimeout(timer);
+      return res;
+    })
+    .catch((err) => {
+      clearTimeout(timer);
+      throw err;
+    });
+}
+
 let cached: SupabaseClient | null = null;
 
 /**
  * Cliente Supabase do Hub (Social Canvas) usando service role.
  * NUNCA expor no frontend. Usado apenas dentro de edge functions.
+ * Timeout curto: se o Hub não responder em 3s, a função degrada
+ * graciosamente em vez de segurar recursos.
  */
 export function getHubClient(): SupabaseClient {
   if (cached) return cached;
@@ -15,6 +40,7 @@ export function getHubClient(): SupabaseClient {
   }
   cached = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchWithTimeout },
   });
   return cached;
 }
@@ -42,7 +68,9 @@ export function isHubUnavailable(err: unknown): boolean {
     msg.includes("networkerror") ||
     msg.includes("failed to fetch") ||
     msg.includes("connection refused") ||
-    msg.includes("timeout")
+    msg.includes("timeout") ||
+    msg.includes("aborted") ||
+    msg.includes("abort")
   );
 }
 

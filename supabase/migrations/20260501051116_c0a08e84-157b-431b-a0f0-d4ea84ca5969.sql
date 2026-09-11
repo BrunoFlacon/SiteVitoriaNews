@@ -25,6 +25,3 @@ USING (public.has_role(auth.uid(), 'admin'::app_role));
 
 -- Remover campaigns do realtime — evita vazamento de campanhas inativas/futuras
 ALTER PUBLICATION supabase_realtime DROP TABLE public.campaigns;
-
--- Remover policy de realtime já que nenhum tópico precisa mais
-DROP POLICY IF EXISTS "realtime_public_topics_only" ON realtime.messages;

@@ -29,9 +29,17 @@ Deno.serve(async (req) => {
     const sbAuth = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: auth } },
     });
-    const { data: claimsData, error: claimsErr } = await sbAuth.auth.getClaims(token);
-    const userId = claimsData?.claims?.sub;
-    if (claimsErr || !userId) {
+    let userId: string | undefined;
+    try {
+      const { data: claimsData, error: claimsErr } = await sbAuth.auth.getClaims(token);
+      userId = claimsData?.claims?.sub;
+      if (claimsErr) {
+        console.warn("[hub-list-exclusive-posts] getClaims", claimsErr);
+      }
+    } catch (e) {
+      console.warn("[hub-list-exclusive-posts] getClaims exception", e);
+    }
+    if (!userId) {
       return errorResponse("Sessão inválida", 401);
     }
 

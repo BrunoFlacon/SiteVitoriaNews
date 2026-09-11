@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.atom-xml]
 verify_jwt = false
+
+[functions.hub-list-categories]
+verify_jwt = false
+
+[functions.newsletter-subscribe]
+verify_jwt = false
