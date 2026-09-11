@@ -97,11 +97,38 @@ pela Management API).
 - Cold start das functions ainda existe, mas sem bloqueio de ~25s a carga de CPU
   cai drasticamente.
 
-## 5. Pendências / próximos passos
+## 5. Correções adicionais (verificação final)
 
-1. ✔ Hub reiniciado (restart) — confirmar volta de `rest/auth/db` a
-   `ACTIVE_HEALTHY` e re-testar `hub-list-posts` (deve retornar itens reais).
-2. Verificar `subscription_plans_public` para anon (view com `security_invoker` +
-   política admin pode ocultar planos do público) — se necessário, ajustar RLS.
-3. Build/commit/push do frontend (deploy automático GitHub Pages).
-4. Testar fluxo de assinatura com usuário real + conteúdo exclusivo.
+- **Bug de upsert de leads**: as funções `newsletter-subscribe` e `lead-capture`
+  usavam `upsert({ onConflict: "email" })`, mas a tabela `leads` só tem unique
+  indexes **parciais** (`uq_leads_email_campaign` / `uq_leads_email_no_campaign`),
+  que o Postgres não infere em `ON CONFLICT (email)` → HTTP 500. Corrigido com
+  upsert manual (select → insert/update) inline nas próprias funções.
+- **Helper compartilhado removido**: um `_shared/leads.ts` foi criado inicialmente,
+  mas causava `BOOT_ERROR` no Deno Deploy — a lógica foi inlinada e o arquivo
+  removido.
+- **Sincronização honesta com o Hub**: o supabase-js não lança exceção em erro de
+  query (retorna `{ data, error }`); o código ignorava o erro e reportava
+  `hub_synced: true` mesmo com o Hub fora. Agora checa `error` e reporta
+  `hub_synced: false` corretamente.
+
+## 6. Verificação final executada
+
+| Item | Resultado |
+|---|---|
+| Site `https://vitoria.news` | HTTP 200, título correto, root div, assets 200 |
+| Links RSS/Atom | apontam para FontEndSite; sem referência ao projeto antigo |
+| `rss-xml` / `atom-xml` / `sitemap-xml` | HTTP 200 (content-types corretos) |
+| `subscription_plans_public` (anon) | 200 — mensal R$19,70 / anual R$197,00 |
+| `newsletter-subscribe` (POST) | 200 — lead gravado, upsert ok, `hub_synced` honesto |
+| `lead-capture` (POST) | 200 — lead gravado |
+| Deploy GitHub Pages | sucesso (`9fa9975`, `fccf785`) |
+
+## 7. Pendências / próximos passos
+
+1. ⏳ **Hub (`ghtkdkauseesambzqfrd`)**: foi pausado por inatividade (plano Nano) e
+   está em restore prolongado — REST/db ainda respondem 504. A Supabase recomenda
+   abrir ticket se passar de 30 min. Enquanto isso, as edge functions degradam
+   graciosamente (`hub_empty: true`) sem travar o site.
+2. Testar fluxo de assinatura com usuário real + conteúdo exclusivo.
+3. Considerar upgrade do Hub para plano pago (o Nano pausa por inatividade).
