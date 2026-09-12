@@ -38,9 +38,9 @@ jobs:
 
       - name: Build the project
         env:
-          VITE_SUPABASE_PROJECT_ID: "kpkeelxdyryufmevhhhb"
-          VITE_SUPABASE_URL: "https://kpkeelxdyryufmevhhhb.supabase.co"
-          VITE_SUPABASE_PUBLISHABLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwa2VlbHhkeXJ5dWZtZXZoaGhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNzE2NTgsImV4cCI6MjA5Mjc0NzY1OH0.XTUwGGllUDkQDNvRGI3kU3mEkqdyYlrOt4thaonXWQ8"
+          VITE_SUPABASE_PROJECT_ID: "iqhxakycirzsrumpygwn"
+          VITE_SUPABASE_URL: "https://iqhxakycirzsrumpygwn.supabase.co"
+          VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_qP2RW1M52CfKvwClf2HyQw_fehaYKiz"
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: npm run build
 
