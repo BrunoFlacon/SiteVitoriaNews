@@ -1,4 +1,4 @@
-project_id = "kpkeelxdyryufmevhhhb"
+project_id = "iqhxakycirzsrumpygwn"
 
 [functions.hub-list-posts]
 verify_jwt = false
@@ -10,6 +10,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.hub-list-lives]
+verify_jwt = false
+
+[functions.hub-list-exclusive-posts]
 verify_jwt = false
 
 [functions.lead-capture]
