@@ -1,7 +1,7 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, errorResponse, jsonResponse } from "../_shared/cors.ts";
-import { getHubClient, HUB_POSTS_TABLES, tryFromTables } from "../_shared/hub.ts";
+import { getHubClient, HUB_POSTS_TABLES, tryFromTables, isHubUnavailable } from "../_shared/hub.ts";
 
 /**
  * Server-side gated endpoint for subscriber-exclusive content.
@@ -86,8 +86,11 @@ Deno.serve(async (req) => {
     );
 
     if (error) {
-      const errObj = error as { code?: string; message?: string };
-      if (errObj.code === "PGRST205" || errObj.code === "42P01") {
+      // Hub indisponível (504/timeout/DNS/tabela ausente) → degrada graciosamente
+      // com lista vazia em vez de 502, evitando erros no dashboard quando o
+      // Hub está fora do ar.
+      if (isHubUnavailable(error)) {
+        console.warn("[hub-list-exclusive-posts] hub indisponível; degradando", error);
         return jsonResponse({ table: null, items: [], hub_empty: true });
       }
       console.error("[hub-list-exclusive-posts] error", error);

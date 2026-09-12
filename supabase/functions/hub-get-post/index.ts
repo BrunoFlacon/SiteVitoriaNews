@@ -23,11 +23,18 @@ Deno.serve(async (req) => {
       },
     );
 
-    if (error || !data) {
-      if (isHubUnavailable(error)) {
-        return jsonResponse({ table: null, item: null, hub_empty: true });
-      }
-      if (error) console.error("[hub-get-post] error", error);
+    if (error) {
+      // Qualquer erro do Hub (504, timeout, tabela faltando, DNS) significa
+      // "Hub indisponível" → degrada graciosamente em vez de responder 404/500.
+      // Isso evita erros em cascata no dashboard (API Gateway) quando o Hub
+      // está fora. O supabase-js retorna { data, error } sem lançar exceção
+      // para erros HTTP, então `error` aqui já cobre o caso de gateway 504.
+      console.warn("[hub-get-post] hub error; degradando", error);
+      return jsonResponse({ table: null, item: null, hub_empty: true });
+    }
+
+    if (!data) {
+      // Hub respondeu com sucesso, mas não há post com este id/slug → 404 legítimo.
       return errorResponse("Post não encontrado", 404);
     }
 

@@ -15,6 +15,15 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
   return fetch(input, { ...rest, signal: ctrl.signal })
     .then((res) => {
       clearTimeout(timer);
+      // Respostas 5xx do gateway do Hub (504 Gateway Timeout, 502, 503) são
+      // tratadas como "Hub indisponível" para que as funções degradem em vez
+      // de propagar erro. O supabase-js normalmente não lança para 4xx, mas o
+      // gateway do Hub pode devolver 5xx com corpo não-PostgREST.
+      if (res.status >= 500) {
+        const err = new Error(`Hub HTTP ${res.status}`) as Error & { status?: number };
+        err.status = res.status;
+        throw err;
+      }
       return res;
     })
     .catch((err) => {
@@ -58,8 +67,9 @@ export const HUB_CATEGORIES_TABLE = "categories";
  */
 export function isHubUnavailable(err: unknown): boolean {
   if (!err) return false;
-  const e = err as { code?: string; message?: string; name?: string };
+  const e = err as { code?: string; message?: string; name?: string; status?: number };
   if (e.code === "PGRST205" || e.code === "42P01") return true;
+  if (typeof e.status === "number" && e.status >= 500) return true;
   const msg = `${e.message ?? ""} ${e.name ?? ""} ${String(err)}`.toLowerCase();
   return (
     msg.includes("failed to lookup") ||
@@ -68,6 +78,10 @@ export function isHubUnavailable(err: unknown): boolean {
     msg.includes("networkerror") ||
     msg.includes("failed to fetch") ||
     msg.includes("connection refused") ||
+    msg.includes("gateway timeout") ||
+    msg.includes("bad gateway") ||
+    msg.includes("service unavailable") ||
+    msg.includes("hub http 5") ||
     msg.includes("timeout") ||
     msg.includes("aborted") ||
     msg.includes("abort")
