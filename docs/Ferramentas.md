@@ -12,7 +12,7 @@ no projeto, com o papel de cada uma e como estão configuradas.
 | Ferramenta | Papel | Detalhes |
 |---|---|---|
 | **GitHub** (repo `BrunoFlacon/SiteVitoriaNews`) | Versionamento e repositório de origem | Branch `main`; histórico com todos os commits de migração e deploy |
-| **GitHub Actions** (`.github/workflows/deploy.yml`) | CI/CD automático | Todo push em `main` dispara build `vite build` + deploy para GitHub Pages |
+| **GitHub Actions** (`.github/workflows/deploy.yml`) | CI/CD automático | Todo push em `main` dispara build `vite build` + deploy para GitHub Pages; build injeta `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` do **FontEndSite** (corrigido em 12/09/2026 — apontava ao projeto antigo `kpkeelxdyryufmevhhhb`) |
 | **GitHub Pages** | Hospedagem do frontend estático | URL pública: `https://vitoria.news` (domínio customizado) |
 | **Supabase CLI** (v2.109.1) | Deploy local das edge functions | `supabase functions deploy --no-verify-jwt` |
 
